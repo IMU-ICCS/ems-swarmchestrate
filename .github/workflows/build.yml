@@ -153,9 +153,9 @@ jobs:
             --build-context core=docker-image://${EMS_CORE_IMAGE}:${{ steps.ver.outputs.core_version }} \
             --build-context core_builder=docker-image://${EMS_CORE_BUILDER_IMAGE}:latest \
             --target ems-server-with-nebulous-translator \
-            -t ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.swarmchestrate_version }} \
-            -t ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.plugin_version }} \
-            -t ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:latest \
+            -t ${REGISTRY}/${EMS_SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.swarmchestrate_version }} \
+            -t ${REGISTRY}/${EMS_SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.plugin_version }} \
+            -t ${REGISTRY}/${EMS_SWARMCHESTRATE_IMAGE}:latest \
             ems-nebulous-translator
             --load
 
@@ -174,6 +174,6 @@ jobs:
       - name: Push all images
         run: |
           set -e
-          docker push ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.plugin_version }}
-          docker push ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.swarmchestrate_version }}
-          docker push ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:latest
+          docker push ${REGISTRY}/${EMS_SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.plugin_version }}
+          docker push ${REGISTRY}/${EMS_SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.swarmchestrate_version }}
+          docker push ${REGISTRY}/${EMS_SWARMCHESTRATE_IMAGE}:latest
