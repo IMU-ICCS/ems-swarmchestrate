@@ -136,9 +136,8 @@ jobs:
         run: |
           ls -l
           ls -l ems-swarmchestrate/
-          ls -l ems-swarmchestrate/src
-          ls -l ems-swarmchestrate/src/main
-          cp -r ems-swarmchestrate/src/main/. ems-nebulous-translator/src/main/
+          ls -l ems-nebulous-translator/
+          cp -r ems-swarmchestrate/src/main/. ems-nebulous-translator/ems-nebulous-translator/src/main/
           ls -l ems-nebulous-translator/src/main/java/eu
 
       # -----------------------------
