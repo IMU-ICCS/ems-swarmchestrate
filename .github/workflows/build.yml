@@ -134,11 +134,7 @@ jobs:
       # -----------------------------
       - name: Copy EMS Swarmchestrate files
         run: |
-          ls -l
-          ls -l ems-swarmchestrate/
-          ls -l ems-nebulous-translator/
           cp -r ems-swarmchestrate/src/main/. ems-nebulous-translator/ems-nebulous-translator/src/main/
-          ls -l ems-nebulous-translator/src/main/java/eu
 
       # -----------------------------
       # 11. Build EMS server + Nebulous/Swarmchestrate translator runtime image
