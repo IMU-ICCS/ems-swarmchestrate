@@ -18,6 +18,9 @@ env:
   EMS_CORE_REPO: https://github.com/IMU-ICCS/ems-main.git
   EMS_CORE_BRANCH: main
 
+  EMS_NEBULOUS_REPO: https://github.com/IMU-ICCS/ems-nebulous-translator.git
+  EMS_NEBULOUS_BRANCH: main
+
   EMS_CORE_BUILDER_IMAGE: ems-server-core-builder
   EMS_CORE_IMAGE: ems-server
   EMS_CLIENT_IMAGE: ems-client
@@ -120,14 +123,28 @@ jobs:
             --load
 
       # -----------------------------
-      # 9. Build EMS server + Nebulous/Swarmchestrate translator runtime image
+      # 9. Clone EMS Nebulous plugin
+      # -----------------------------
+      - name: Checkout EMS Nebulous plugin
+        run: |
+          git clone --depth 1 --branch "${EMS_NEBULOUS_BRANCH}" "${EMS_NEBULOUS_REPO}" ems-nebulous-translator
+
+      # -----------------------------
+      # 10. Copy EMS Swarmchestrate files
+      # -----------------------------
+      - name: Copy EMS Swarmchestrate files
+        run: |
+          cp ems-swarmchestrate/src/main ems-nebulous-translator/src/main
+
+      # -----------------------------
+      # 11. Build EMS server + Nebulous/Swarmchestrate translator runtime image
       # -----------------------------
       - name: EMS server + Nebulous/Swarmchestrate plugin
         run: |
           sed -i \
             -e 's|FROM \$EMS_CORE_BUILDER_IMAGE|FROM core_builder|' \
             -e 's|FROM \$EMS_CORE_IMAGE|FROM core|' \
-            Dockerfile
+            ems-nebulous-translator/Dockerfile
           
           docker buildx use default
           
@@ -139,11 +156,11 @@ jobs:
             -t ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.swarmchestrate_version }} \
             -t ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:${{ steps.ver.outputs.plugin_version }} \
             -t ${REGISTRY}/${SWARMCHESTRATE_IMAGE}:latest \
-            --load \
-            .
+            ems-nebulous-translator
+            --load
 
       # -----------------------------
-      # 10. Login (only before push)
+      # 12. Login (only before push)
       # -----------------------------
       - uses: docker/login-action@v3
         with:
@@ -152,7 +169,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # -----------------------------
-      # 11. Push everything (final step only)
+      # 13. Push everything (final step only)
       # -----------------------------
       - name: Push all images
         run: |
