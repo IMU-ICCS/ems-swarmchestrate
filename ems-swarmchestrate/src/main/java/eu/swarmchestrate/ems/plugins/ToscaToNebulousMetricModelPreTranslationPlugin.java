@@ -463,6 +463,8 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
 
         log.info("Extracting components from node_templates");
         List<Map<String, Object>> componentsCaml = new ArrayList<>();
+        // Collect component names to create a scope similar to legacy/v1 translators
+        List<String> componentNames = new ArrayList<>();
 
         // Get service_template
         Map<String, Object> serviceTemplate = (Map<String, Object>) toscaYaml.get("service_template");
@@ -494,6 +496,8 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
 
             Map<String, Object> componentCaml = new LinkedHashMap<>();
             componentCaml.put("name", nodeName);
+            // Track component names for scopes
+            componentNames.add(nodeName);
 
             List<Map<String, Object>> metrics = new ArrayList<>();
             List<Map<String, Object>> requirements = new ArrayList<>();
@@ -570,10 +574,14 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
             componentsCaml.add(componentCaml);
         }
 
-        // Create spec with components (matching EMS format)
-        Map<String, Object> spec = new LinkedHashMap<>();
-        spec.put("components", componentsCaml);
-        camlYaml.put("spec", spec);
+        // Create spec with components and scopes (matching legacy/v1 EMS format)
+        List<Map<String, Object>> scopes = new ArrayList<>();
+        Map<String, Object> scope = new LinkedHashMap<>();
+        scope.put("name", "a_scope");
+        scope.put("components", componentNames);
+        scopes.add(scope);
+
+        camlYaml.put("spec", Map.of("components", componentsCaml, "scopes", scopes));
         log.debug("Components: {}", componentsCaml);
 
         return camlYaml;
