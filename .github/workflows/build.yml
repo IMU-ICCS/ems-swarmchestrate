@@ -27,7 +27,7 @@ env:
   EMS_SWARMCHESTRATE_IMAGE: ems-server-swarmchestrate
 
   CORE_VERSION: 8.0.0-snapshot
-  SWARMCHESTRATE_VERSION: 1.0.0-snapshot
+  SWARMCHESTRATE_VERSION: 1.0.1-snapshot
 
 jobs:
   build:
