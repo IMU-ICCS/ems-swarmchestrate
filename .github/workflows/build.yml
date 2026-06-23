@@ -15,7 +15,7 @@ permissions:
 env:
   REGISTRY: ghcr.io/imu-iccs
 
-  EMS_CORE_REPO: https://github.com/IMU-ICCS/ems-main.git
+  EMS_CORE_REPO: https://github.com/dkoun/ems-main.git
   EMS_CORE_BRANCH: main
 
   EMS_NEBULOUS_REPO: https://github.com/IMU-ICCS/ems-nebulous-translator.git
