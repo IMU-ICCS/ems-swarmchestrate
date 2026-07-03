@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         // Defining the file name of the file
         Path fileName = Path.of("/opt/ems-server/logs/customoutput.log");
         try {
-            Files.writeString(fileName, content+"\n");
+            Files.writeString(fileName, content+"\n",StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         }
         catch (IOException e) {
             System.err.println("An error occurred: " + e.getMessage());
@@ -526,6 +527,11 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
             List<Map<String, Object>> metrics = new ArrayList<>();
             List<Map<String, Object>> requirements = new ArrayList<>();
 
+            for (String capability : capabilities.keySet()){
+                write_to_file("Processing capability "+capability);
+                write_to_file("Capability content is "+capabilities.get(capability));
+            }
+            
             { // Start capabilities processing block
 
                 // Process metrics capability
@@ -597,6 +603,8 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                                 write_to_file("Requirement for slo properties" +sloProperties.toString()+" was empty ");
                             }
                         }
+                    }else{
+                        write_to_file("Slo-constraints was deemed empty");
                     }
                 }
             }
