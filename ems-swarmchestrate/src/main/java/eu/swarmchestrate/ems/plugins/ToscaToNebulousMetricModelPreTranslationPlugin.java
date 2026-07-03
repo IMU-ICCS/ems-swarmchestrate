@@ -25,13 +25,20 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -39,6 +46,19 @@ import java.util.stream.Collectors;
 public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTranslationPlugin {
 
     private final NebulousEmsTranslatorProperties properties;
+
+    protected void write_to_file(String content){
+
+        // Defining the file name of the file
+        Path fileName = Path.of("/opt/ems-server/logs/customoutput.log");
+        try {
+            Files.writeString(fileName, content+"\n");
+        }
+        catch (IOException e) {
+            System.err.println("An error occurred: " + e.getMessage());
+        }
+    }
+
 
     @Override
     public String preprocessModel(String toscaModelFile, String applicationId, Map<String,Object> additionalArguments) {
@@ -50,7 +70,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                               applicationId: {}
                         additionalArguments: {}
                  """,
-                 toscaModelFile, nebMetricModelFile, applicationId, additionalArguments);
+                toscaModelFile, nebMetricModelFile, applicationId, additionalArguments);
 
         tosca2nebulousMetricModel(toscaModelFile, nebMetricModelFile);
 
@@ -276,7 +296,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
 
     // Extracted legacy parser (original behavior)
     @SuppressWarnings("unchecked")
-    protected Map<String, Object> translateToscaToCamlLegacy(Map<String, Object> toscaYaml, File inputFile) {
+    protected Map<String, Object> translateToscaToCamlLegacy(@NotNull Map<String, Object> toscaYaml, File inputFile) {
         Map<String, Object> camlYaml = new LinkedHashMap<>();
         camlYaml.put("apiVersion", "nebulous/v1");
         camlYaml.put("kind", "MetricModel");
@@ -449,6 +469,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         camlYaml.put("kind", "MetricModel");
 
         log.info("Creating metadata section");
+        write_to_file("Creating metadata section");
         // Extract metadata from TOSCA file if present
         Map<String, Object> metadata = (Map<String, Object>) toscaYaml.get("metadata");
         if (metadata == null) {
@@ -462,6 +483,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         camlYaml.put("metadata", metadata);
 
         log.info("Extracting components from node_templates");
+        write_to_file("Extracting components from node_templates");
         List<Map<String, Object>> componentsCaml = new ArrayList<>();
         // Collect component names to create a scope similar to legacy/v1 translators
         List<String> componentNames = new ArrayList<>();
@@ -481,16 +503,18 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         }
 
         log.info("Processing node_templates");
+        write_to_file("Processing node_templates");
         for (Map.Entry<String, Object> entry : nodeTemplates.entrySet()) {
             String nodeName = entry.getKey();
             Map<String, Object> nodeData = (Map<String, Object>) entry.getValue();
 
             log.info("Processing node: {}", nodeName);
-
+            write_to_file("Processing node "+nodeName);
             // Process capabilities
             Map<String, Object> capabilities = (Map<String, Object>) nodeData.get("capabilities");
             if (capabilities == null) {
                 log.info("Skipping node {}: no capabilities found", nodeName);
+                write_to_file("Skipping node "+nodeName);
                 continue; // Skip this node
             }
 
@@ -504,16 +528,19 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
 
             { // Start capabilities processing block
 
-            // Process metrics capability
-            Map<String, Object> metricsCapability = (Map<String, Object>) capabilities.get("metrics");
+                // Process metrics capability
+                Map<String, Object> metricsCapability = (Map<String, Object>) capabilities.get("metrics");
                 if (metricsCapability != null) {
                     log.debug("Found metrics capability");
+                    write_to_file("Found metrics capability");
+
                     Map<String, Object> metricsProperties = (Map<String, Object>) metricsCapability.get("properties");
                     if (metricsProperties != null) {
                         // Process raw metrics
                         List<Map<String, Object>> rawMetrics = (List<Map<String, Object>>) metricsProperties.get("raw");
                         if (rawMetrics != null) {
                             log.debug("Processing raw metrics");
+                            write_to_file("Processing raw metrics");
                             for (Map<String, Object> rawMetric : rawMetrics) {
                                 Map<String, Object> metric = processRawMetricTOSCA2(rawMetric);
                                 if (metric != null) {
@@ -526,6 +553,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                         List<Map<String, Object>> compositeMetrics = (List<Map<String, Object>>) metricsProperties.get("composite");
                         if (compositeMetrics != null) {
                             log.debug("Processing composite metrics");
+                            write_to_file("Processing composite metrics");
                             for (Map<String, Object> compositeMetric : compositeMetrics) {
                                 Map<String, Object> metric = processCompositeMetricTOSCA2(compositeMetric);
                                 if (metric != null) {
@@ -540,23 +568,33 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                 Map<String, Object> sloConstraints = (Map<String, Object>) capabilities.get("slo-constraints");
                 if (sloConstraints != null) {
                     log.debug("Found slo-constraints capability");
+                    write_to_file("Found slo constraints capability");
                     Map<String, Object> sloProperties = (Map<String, Object>) sloConstraints.get("properties");
                     if (sloProperties != null) {
                         log.debug("Processing SLO constraints");
+                        write_to_file("Processing SLO constraints");
                         // Handle or_list for multiple constraints
                         List<Map<String, Object>> orList = (List<Map<String, Object>>) sloProperties.get("or_list");
                         if (orList != null) {
                             for (Map<String, Object> sloItem : orList) {
                                 Map<String, Object> requirement = processSLOConstraintTOSCA2(sloItem);
+
                                 if (requirement != null) {
                                     requirements.add(requirement);
+                                    write_to_file("Considering requirement "+requirement.toString());
+                                }else{
+                                    write_to_file("SLO item was empty "+sloItem.toString());
                                 }
                             }
                         } else {
                             // Fallback for single constraint
                             Map<String, Object> requirement = processSLOConstraintTOSCA2(sloProperties);
+
                             if (requirement != null) {
                                 requirements.add(requirement);
+                                write_to_file("Considering requirement "+requirement.toString());
+                            }else{
+                                write_to_file("Requirement for slo properties" +sloProperties.toString()+" was empty ");
                             }
                         }
                     }
@@ -566,6 +604,12 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
             // Add requirements before metrics (matching EMS format)
             if (!requirements.isEmpty()) {
                 componentCaml.put("requirements", requirements);
+                write_to_file("Putting the following requirements:");
+                for (Map<String, Object> requirement:requirements){
+                    for (String req_key : requirement.keySet()){
+                        write_to_file("Key: "+req_key+" value: "+requirement.get(req_key));
+                    }
+                }
             }
             if (!metrics.isEmpty()) {
                 componentCaml.put("metrics", metrics);
@@ -621,12 +665,12 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         // Sensor configuration
         Map<String, Object> sensor = new LinkedHashMap<>();
         String sensorType = (String) metricData.get("sensor");
-        
+
         // Handle legacy format where "collector" is used instead of "sensor"
         if (sensorType == null) {
             sensorType = (String) metricData.get("collector");
         }
-        
+
         if (sensorType != null) {
             sensor.put("type", sensorType);
         }
@@ -708,7 +752,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         // Window - handle both direct fields and nested window object
         String windowType = (String) metricData.get("window_type");
         String windowSize = (String) metricData.get("window_size");
-        
+
         if ((windowType == null || windowSize == null)) {
             Object windowObj = metricData.get("window");
             if (windowObj instanceof Map) {
@@ -721,7 +765,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                 }
             }
         }
-        
+
         if (windowType != null && windowSize != null) {
             metric.put("window", windowType + " " + windowSize);
         }
