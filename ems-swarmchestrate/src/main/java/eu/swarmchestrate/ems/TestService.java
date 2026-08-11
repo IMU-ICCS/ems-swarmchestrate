@@ -19,6 +19,6 @@ import org.springframework.stereotype.Service;
 public class TestService implements PostTranslationPlugin {
 	@Override
 	public void processTranslationResults(TranslationContext translationContext, TopicBeacon topicBeacon) {
-		log.info("!!!!!!!!!!!!!!!!!!!!!!!! SUCCESS");
+		log.info("!!!!!!!!!!!!!!!!!!!!!!! SUCCESS");
 	}
 }
