@@ -41,8 +41,8 @@ RUN \
     clean install -P '!build-docker-image'
 
 
-# -----------------   EMS Server with Nebulous Translator image   -----------------
-FROM ems_core_image AS ems-server-with-nebulous-translator
+# -----------------   EMS Server with Nebulous+Swarmchestrate Translator image   -----------------
+FROM ems_core_image AS ems-server-with-swarmchestarte-translator
 
 ARG BUILD_DIR=/build
 
