@@ -21,7 +21,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io/imu-iccs
-  CORE_VERSION: 8.0.0-snapshot
+  NEBULOUS_VERSION: 1.1.0-snapshot
   SWARMCHESTRATE_VERSION: 1.1.0-snapshot
 
 jobs:
@@ -47,8 +47,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          SERVER_IMAGE="${REGISTRY}/ems-server:${CORE_VERSION}"
-          BUILDER_IMAGE="${REGISTRY}/ems-server-core-builder:${CORE_VERSION}"
+          SERVER_IMAGE="${REGISTRY}/ems-server-nebulous:${NEBULOUS_VERSION}"
+          BUILDER_IMAGE="${REGISTRY}/ems-server-nebulous-builder:${NEBULOUS_VERSION}"
 
           echo "Checking $SERVER_IMAGE ..."
           SERVER_DIGEST=$(docker buildx imagetools inspect "$SERVER_IMAGE" --format '{{json .Manifest}}' | jq -r '.digest')
@@ -64,8 +64,8 @@ jobs:
             exit 1
           fi
 
-          echo "server_ref=${REGISTRY}/ems-server@${SERVER_DIGEST}" >> "$GITHUB_OUTPUT"
-          echo "builder_ref=${REGISTRY}/ems-server-core-builder@${BUILDER_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "server_ref=${REGISTRY}/ems-server-nebulous@${SERVER_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "builder_ref=${REGISTRY}/ems-server-nebulous-builder@${BUILDER_DIGEST}" >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------
   # 2. Collect metadata

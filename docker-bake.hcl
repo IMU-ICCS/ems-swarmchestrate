@@ -54,7 +54,8 @@ variable "CACHE_REGISTRY" {
 
 
 group "default" {
-  targets = ["builder", "plugin"]
+#   targets = ["builder", "plugin"]
+  targets = ["plugin"]
 }
 
 target "common" {
@@ -96,7 +97,6 @@ target "builder" {
     "${REGISTRY}/ems-server-swarmchestrate-builder:${COMMIT_SHA}-${ARCH_TAG}",
   ]
 }
-
 
 target "plugin" {
   inherits = ["common"]

@@ -9,8 +9,7 @@
 
 
 # ----------------- EMS Builder image -----------------
-#FROM ems_core_builder_image AS ems-swarmchestarte-translator-builder
-FROM ghcr.io/imu-iccs/ems-server-nebulous-builder:1.1.0-snapshot AS ems-swarmchestarte-translator-builder
+FROM ems_core_builder_image AS ems-swarmchestarte-translator-builder
 
 ARG BUILD_DIR=/build
 
@@ -43,13 +42,12 @@ RUN \
 
 
 # -----------------   EMS Server with Nebulous Translator image   -----------------
-#FROM ems_core_image AS ems-server-with-nebulous-translator
-FROM ghcr.io/imu-iccs/ems-server-nebulous:1.1.0-snapshot AS ems-server-with-nebulous-translator
+FROM ems_core_image AS ems-server-with-nebulous-translator
 
 ARG BUILD_DIR=/build
 
 ENV EXTRA_LOADER_PATHS=/plugins/* \
-    SCAN_PACKAGES=eu.nebulous.ems \
+    SCAN_PACKAGES=eu.nebulous.ems,eu.swarmchestarte.ems \
     IP_SETTING=DEFAULT_IP         \
     SELF_HEALING_ENABLED=false
 
