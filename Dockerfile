@@ -42,7 +42,7 @@ RUN \
 
 
 # -----------------   EMS Server with Nebulous+Swarmchestrate Translator image   -----------------
-FROM ems_core_image AS ems-server-with-swarmchestarte-translator
+FROM ems_core_image AS ems-server-with-swarmchestrate-translator
 
 ARG BUILD_DIR=/build
 
