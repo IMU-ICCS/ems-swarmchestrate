@@ -9,7 +9,7 @@
 
 
 # ----------------- EMS Builder image -----------------
-FROM ems_core_builder_image AS ems-swarmchestarte-translator-builder
+FROM ems_core_builder_image AS ems-swarmchestrate-translator-builder
 
 ARG BUILD_DIR=/build
 
@@ -47,11 +47,11 @@ FROM ems_core_image AS ems-server-with-swarmchestrate-translator
 ARG BUILD_DIR=/build
 
 ENV EXTRA_LOADER_PATHS=/plugins/* \
-    SCAN_PACKAGES=eu.nebulous.ems,eu.swarmchestarte.ems \
+    SCAN_PACKAGES=eu.nebulous.ems,eu.swarmchestrate.ems \
     IP_SETTING=DEFAULT_IP         \
     SELF_HEALING_ENABLED=false
 
-COPY --from=ems-swarmchestarte-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/ems-nebulous-*-jar-with-dependencies.jar /plugins/
-COPY --from=ems-swarmchestarte-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/banner.txt /tmp/
+COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/ems-nebulous-*-jar-with-dependencies.jar /plugins/
+COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/banner.txt /tmp/
 
 RUN cat /tmp/banner.txt >> ${BASEDIR}/BOOT-INF/classes/banner.txt
