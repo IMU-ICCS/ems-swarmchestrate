@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Service
+//@Service
 @RequiredArgsConstructor
 public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTranslationPlugin {
 
