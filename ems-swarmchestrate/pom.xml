@@ -73,13 +73,11 @@
             <groupId>gr.iccs.imu.ems</groupId>
             <artifactId>control-service</artifactId>
             <classifier>original</classifier>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>gr.iccs.imu.ems</groupId>
             <artifactId>control-service</artifactId>
             <version>${ems.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
