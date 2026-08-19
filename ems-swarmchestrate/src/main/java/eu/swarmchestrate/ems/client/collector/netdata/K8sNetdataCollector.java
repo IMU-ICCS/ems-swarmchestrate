@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Collects measurements from Netdata agents in a Kubernetes cluster
  */
 @Slf4j
-@Component
+@Component("K8sNetdataCollectorWithAdaptiveFiltering")
 @RequiredArgsConstructor
 public class K8sNetdataCollector implements IClientCollector, INetdataCollector, InitializingBean {
 
