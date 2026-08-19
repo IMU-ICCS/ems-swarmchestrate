@@ -7,7 +7,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0/
  */
 
-package gr.iccs.imu.ems.common.collector.netdata;
+package eu.swarmchestrate.ems.client.collector.netdata;
 
 import gr.iccs.imu.ems.api.EmsConstant;
 import gr.iccs.imu.ems.common.collector.AbstractEndpointCollectorProperties;
