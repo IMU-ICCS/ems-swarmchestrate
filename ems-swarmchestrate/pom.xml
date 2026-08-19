@@ -79,6 +79,7 @@
             <groupId>gr.iccs.imu.ems</groupId>
             <artifactId>baguette-client</artifactId>
             <version>${ems.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- ===================================================================== -->
