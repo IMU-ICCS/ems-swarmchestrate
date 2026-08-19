@@ -65,6 +65,6 @@ ARG BUILD_DIR=/build
 ENV SCAN_PACKAGES=eu.swarmchestrate.ems \
     IP_SETTING=DEFAULT_IP \
     SELF_HEALING_ENABLED=false \
-    COLLECTOR_CLASSES=eu.swarmchestrate.ems.collector.netdata.NetdataCollector,gr.iccs.imu.ems.baguette.client.collector.prometheus.PrometheusCollector2,gr.iccs.imu.ems.baguette.client.collector.generator.ClientGeneratorCollector
+    COLLECTOR_CLASSES=eu.swarmchestrate.ems.client.collector.netdata.K8sNetdataCollector,gr.iccs.imu.ems.baguette.client.collector.prometheus.PrometheusCollector2,gr.iccs.imu.ems.baguette.client.collector.generator.ClientGeneratorCollector
 
 COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/ems-nebulous-*-jar-with-dependencies.jar ./jars/
