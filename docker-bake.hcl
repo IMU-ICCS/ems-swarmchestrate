@@ -8,6 +8,10 @@ variable "CORE_SERVER_REF" {
   default = "ghcr.io/imu-iccs/ems-server-nebulous:1.1.0-snapshot"
 }
 
+variable "CORE_CLIENT_REF" {
+  default = "ghcr.io/imu-iccs/ems-client:8.0.0-snapshot"
+}
+
 variable "CORE_BUILDER_REF" {
   default = "ghcr.io/imu-iccs/ems-server-nebulous-builder:1.1.0-snapshot"
 }
@@ -54,8 +58,8 @@ variable "CACHE_REGISTRY" {
 
 
 group "default" {
-#   targets = ["builder", "plugin"]
-  targets = ["plugin"]
+#   targets = ["builder", "server", "client"]
+  targets = ["server", "client"]
 }
 
 target "common" {
@@ -69,6 +73,7 @@ target "common" {
   contexts = {
     ems_core_builder_image = "docker-image://${CORE_BUILDER_REF}"
     ems_core_image         = "docker-image://${CORE_SERVER_REF}"
+    ems_client_image       = "docker-image://${CORE_CLIENT_REF}"
   }
 
   args = {
@@ -98,11 +103,20 @@ target "builder" {
   ]
 }
 
-target "plugin" {
+target "server" {
   inherits = ["common"]
   target     = "ems-server-with-swarmchestrate-translator"
 
   tags = [
     "${REGISTRY}/ems-server-swarmchestrate:${COMMIT_SHA}-${ARCH_TAG}",
+  ]
+}
+
+target "client" {
+  inherits = ["common"]
+  target     = "ems-client-with-adaptive-filtering"
+
+  tags = [
+    "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-${ARCH_TAG}",
   ]
 }

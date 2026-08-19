@@ -21,6 +21,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io/imu-iccs
+  CORE_VERSION: 8.0.0-snapshot
   NEBULOUS_VERSION: 1.1.0-snapshot
   SWARMCHESTRATE_VERSION: 1.1.0-snapshot
 
@@ -32,6 +33,7 @@ jobs:
   preflight:
     runs-on: ubuntu-24.04
     outputs:
+      client_ref: ${{ steps.resolve.outputs.client_ref }}
       server_ref: ${{ steps.resolve.outputs.server_ref }}
       builder_ref: ${{ steps.resolve.outputs.builder_ref }}
 
@@ -47,14 +49,21 @@ jobs:
         run: |
           set -euo pipefail
 
+          CLIENT_IMAGE="${REGISTRY}/ems-client:${CORE_VERSION}"
           SERVER_IMAGE="${REGISTRY}/ems-server-nebulous:${NEBULOUS_VERSION}"
           BUILDER_IMAGE="${REGISTRY}/ems-server-nebulous-builder:${NEBULOUS_VERSION}"
 
+          echo "Checking $CLIENT_IMAGE ..."
+          CLIENT_DIGEST=$(docker buildx imagetools inspect "$CLIENT_IMAGE" --format '{{json .Manifest}}' | jq -r '.digest')
           echo "Checking $SERVER_IMAGE ..."
           SERVER_DIGEST=$(docker buildx imagetools inspect "$SERVER_IMAGE" --format '{{json .Manifest}}' | jq -r '.digest')
           echo "Checking $BUILDER_IMAGE ..."
           BUILDER_DIGEST=$(docker buildx imagetools inspect "$BUILDER_IMAGE" --format '{{json .Manifest}}' | jq -r '.digest')
 
+          if [ -z "$CLIENT_DIGEST" ] || [ "$CLIENT_DIGEST" = "null" ]; then
+            echo "ERROR: could not resolve digest for $CLIENT_IMAGE"
+            exit 1
+          fi
           if [ -z "$SERVER_DIGEST" ] || [ "$SERVER_DIGEST" = "null" ]; then
             echo "ERROR: could not resolve digest for $SERVER_IMAGE"
             exit 1
@@ -64,6 +73,7 @@ jobs:
             exit 1
           fi
 
+          echo "client_ref=${REGISTRY}/ems-client@${CLIENT_DIGEST}" >> "$GITHUB_OUTPUT"
           echo "server_ref=${REGISTRY}/ems-server-nebulous@${SERVER_DIGEST}" >> "$GITHUB_OUTPUT"
           echo "builder_ref=${REGISTRY}/ems-server-nebulous-builder@${BUILDER_DIGEST}" >> "$GITHUB_OUTPUT"
 
@@ -124,6 +134,7 @@ jobs:
           export PLATFORM="${{ matrix.platform }}"
           export ARCH_TAG="${{ matrix.arch_tag }}"
           export CORE_SERVER_REF="${{ needs.preflight.outputs.server_ref }}"
+          export CORE_CLIENT_REF="${{ needs.preflight.outputs.client_ref }}"
           export CORE_BUILDER_REF="${{ needs.preflight.outputs.builder_ref }}"
 
           docker buildx bake --push
@@ -159,4 +170,14 @@ jobs:
             -t "${REGISTRY}/ems-server-swarmchestrate:latest" \
             -t "${REGISTRY}/ems-server-swarmchestrate:${COMMIT_SHA}" \
             -t "${REGISTRY}/ems-server-swarmchestrate:${COMMIT_SHA}-${COMMIT_SAFE_TIME}" \
+            "${SRC_AMD64}" "${SRC_ARM64}"
+          
+          SRC_AMD64="${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-amd64"
+          SRC_ARM64="${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-arm64"
+
+          docker buildx imagetools create \
+            -t "${REGISTRY}/ems-client-swarmchestrate:${SWARMCHESTRATE_VERSION}" \
+            -t "${REGISTRY}/ems-client-swarmchestrate:latest" \
+            -t "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}" \
+            -t "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-${COMMIT_SAFE_TIME}" \
             "${SRC_AMD64}" "${SRC_ARM64}"

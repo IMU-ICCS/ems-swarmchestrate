@@ -48,10 +48,23 @@ ARG BUILD_DIR=/build
 
 ENV EXTRA_LOADER_PATHS=/plugins/* \
     SCAN_PACKAGES=eu.nebulous.ems,eu.swarmchestrate.ems \
-    IP_SETTING=DEFAULT_IP         \
+    IP_SETTING=DEFAULT_IP \
     SELF_HEALING_ENABLED=false
 
 COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/ems-nebulous-*-jar-with-dependencies.jar /plugins/
 COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/banner.txt /tmp/
 
 RUN cat /tmp/banner.txt >> ${BASEDIR}/BOOT-INF/classes/banner.txt
+
+
+# -----------------   EMS Server with Nebulous+Swarmchestrate Translator image   -----------------
+FROM ems_client_image AS ems-client-with-adaptive-filtering
+
+ARG BUILD_DIR=/build
+
+ENV SCAN_PACKAGES=eu.swarmchestrate.ems \
+    IP_SETTING=DEFAULT_IP \
+    SELF_HEALING_ENABLED=false \
+    COLLECTOR_CLASSES=eu.swarmchestrate.ems.collector.netdata.NetdataCollector,gr.iccs.imu.ems.baguette.client.collector.prometheus.PrometheusCollector2,gr.iccs.imu.ems.baguette.client.collector.generator.ClientGeneratorCollector
+
+COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/ems-nebulous-*-jar-with-dependencies.jar ./jars/
