@@ -69,11 +69,12 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>gr.iccs.imu.ems</groupId>
             <artifactId>control-service</artifactId>
             <classifier>original</classifier>
-        </dependency>
+            <scope>provided</scope>
+        </dependency>-->
         <dependency>
             <groupId>gr.iccs.imu.ems</groupId>
             <artifactId>control-service</artifactId>
