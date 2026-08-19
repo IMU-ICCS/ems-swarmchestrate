@@ -11,6 +11,8 @@ package eu.swarmchestrate.ems.collector.netdata;
 
 import gr.iccs.imu.ems.common.collector.AbstractEndpointCollector;
 import gr.iccs.imu.ems.common.collector.CollectorContext;
+import gr.iccs.imu.ems.common.collector.netdata.INetdataCollector;
+import gr.iccs.imu.ems.common.collector.netdata.NetdataCollectorProperties;
 import gr.iccs.imu.ems.util.EventBus;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
