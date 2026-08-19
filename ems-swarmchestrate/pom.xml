@@ -73,6 +73,7 @@
             <groupId>gr.iccs.imu.ems</groupId>
             <artifactId>control-service</artifactId>
             <classifier>original</classifier>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -158,6 +159,32 @@
         </resources>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-control-jar</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>gr.iccs.imu.ems</groupId>
+                                    <artifactId>control-service</artifactId>
+                                    <version>${ems.version}</version>
+                                    <type>jar</type>
+                                    <classifier>original</classifier>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
