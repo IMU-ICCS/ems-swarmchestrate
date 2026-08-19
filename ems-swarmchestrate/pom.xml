@@ -72,7 +72,7 @@
         <dependency>
             <groupId>gr.iccs.imu.ems</groupId>
             <artifactId>control-service</artifactId>
-            <classifier>original</classifier>
+            <version>${ems.version}</version>
             <scope>provided</scope>
         </dependency>
 
