@@ -16,7 +16,7 @@ import gr.iccs.imu.ems.brokercep.event.EventMap;
 import gr.iccs.imu.ems.common.collector.CollectorConstant;
 import gr.iccs.imu.ems.common.collector.CollectorContext;
 import gr.iccs.imu.ems.common.collector.netdata.INetdataCollector;
-import gr.iccs.imu.ems.common.collector.netdata.NetdataCollectorProperties;
+//import gr.iccs.imu.ems.common.collector.netdata.NetdataCollectorProperties;
 import gr.iccs.imu.ems.util.EventBus;
 import gr.iccs.imu.ems.util.StrUtil;
 import lombok.Data;
@@ -87,7 +87,7 @@ public class K8sNetdataCollector implements IClientCollector, INetdataCollector,
     protected final static String NETDATA_DATA_API_V2_PATH = "/api/v2/data";
     protected final static String DEFAULT_NETDATA_DATA_API_PATH = NETDATA_DATA_API_V2_PATH;
 
-    private final NetdataCollectorProperties properties;
+    private final NetdataCollectorProperties2 properties;
     private final CollectorContext collectorContext;
     private final TaskScheduler taskScheduler;
     private final EventBus<String, Object, Object> eventBus;
@@ -101,7 +101,7 @@ public class K8sNetdataCollector implements IClientCollector, INetdataCollector,
     private final Map<String, Deque<MetricSample>> metricHistory = new ConcurrentHashMap<>();
     // track last time a metric was published (milliseconds since epoch)
     private final Map<String, Long> lastPublishedAt = new ConcurrentHashMap<>();
-    private final double PERCENTAGE_THRESHOLD = 10.0;
+//    private final double PERCENTAGE_THRESHOLD = 10.0;
 
     private static class MetricSample {
         final double value;
@@ -711,7 +711,7 @@ public class K8sNetdataCollector implements IClientCollector, INetdataCollector,
                 // prev == 0, metricValue != 0: publish
             } else {
                 double percentChange = Math.abs((metricValue - prev) / prev) * 100.0;
-                if (percentChange < PERCENTAGE_THRESHOLD) {
+                if (percentChange < properties.getPercentageThreshold()) {
                     long lastPub = lastPublishedAt.getOrDefault(historyKey, 0L);
                     // If metric was never published before (lastPub == 0L), publish it now as initial value
                     if (lastPub == 0L) {
