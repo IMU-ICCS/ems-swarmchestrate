@@ -172,12 +172,12 @@ jobs:
             -t "${REGISTRY}/ems-server-swarmchestrate:${COMMIT_SHA}-${COMMIT_SAFE_TIME}" \
             "${SRC_AMD64}" "${SRC_ARM64}"
           
-          SRC_AMD64="${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-amd64"
-          SRC_ARM64="${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-arm64"
-
-          docker buildx imagetools create \
-            -t "${REGISTRY}/ems-client-swarmchestrate:${SWARMCHESTRATE_VERSION}" \
-            -t "${REGISTRY}/ems-client-swarmchestrate:latest" \
-            -t "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}" \
-            -t "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-${COMMIT_SAFE_TIME}" \
-            "${SRC_AMD64}" "${SRC_ARM64}"
+#          SRC_AMD64="${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-amd64"
+#          SRC_ARM64="${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-arm64"
+#
+#          docker buildx imagetools create \
+#            -t "${REGISTRY}/ems-client-swarmchestrate:${SWARMCHESTRATE_VERSION}" \
+#            -t "${REGISTRY}/ems-client-swarmchestrate:latest" \
+#            -t "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}" \
+#            -t "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-${COMMIT_SAFE_TIME}" \
+#            "${SRC_AMD64}" "${SRC_ARM64}"
