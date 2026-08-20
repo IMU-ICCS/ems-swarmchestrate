@@ -59,7 +59,7 @@ variable "CACHE_REGISTRY" {
 
 group "default" {
 #   targets = ["builder", "server", "client"]
-  targets = ["server", "client"]
+  targets = ["server"]
 }
 
 target "common" {
@@ -114,8 +114,6 @@ target "server" {
 
 target "client" {
   inherits = ["common"]
-  context    = "ems-client-swarmchestrate"
-  dockerfile = "Dockerfile"
   target     = "ems-client-with-adaptive-filtering"
 
   tags = [
