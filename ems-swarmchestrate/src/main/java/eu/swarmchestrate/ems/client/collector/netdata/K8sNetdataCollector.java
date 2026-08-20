@@ -121,6 +121,7 @@ public class K8sNetdataCollector implements IClientCollector, INetdataCollector,
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  Initializing K8s Netdata Collector");
         if (!(collectorContext instanceof ClientCollectorContext))
             throw new IllegalArgumentException("Invalid CollectorContext provided. Expected: ClientCollectorContext, but got "+collectorContext.getClass().getName());
     }

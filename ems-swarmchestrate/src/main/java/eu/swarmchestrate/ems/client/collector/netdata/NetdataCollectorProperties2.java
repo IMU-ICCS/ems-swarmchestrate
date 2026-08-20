@@ -14,15 +14,33 @@ import gr.iccs.imu.ems.common.collector.AbstractEndpointCollectorProperties;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Slf4j
 @Data
-@EqualsAndHashCode(callSuper = true)
+//@EqualsAndHashCode(callSuper = true)
 @Configuration
 @ConfigurationProperties(prefix = EmsConstant.EMS_PROPERTIES_PREFIX + "collector.netdata")
-public class NetdataCollectorProperties2 extends gr.iccs.imu.ems.common.collector.netdata.NetdataCollectorProperties {
+public class NetdataCollectorProperties2 implements InitializingBean {
+    // from AbstractEndpointCollectorProperties
+    private boolean enable;
+    private long delay;
+    private String url;
+    private String urlOfNodesWithoutClient;
+    private boolean skipLocal = false;
+    private boolean createTopic;
+    private List<String> allowedTopics;
+
+    private int errorLimit;     // num of consecutive errors. Zero or negative value will immediately trigger self-healing
+
+    // from NetdataCollectorProperties
+    private String k8sNodeAddressEnvVar = "K8S_NODE_ADDRESS_ENV_VAR";
+
+    // new properties
     private double percentageThreshold = 10.0;
 
     @Override
