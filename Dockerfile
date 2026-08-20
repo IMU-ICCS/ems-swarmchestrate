@@ -29,9 +29,9 @@ ENV GIT_COMMIT=$GIT_COMMIT \
 WORKDIR ${BUILD_DIR}/ems-nebulous-translator
 
 # Download dependencies
-COPY ems-swarmchestrate/pom.xml   ${BUILD_DIR}/ems-nebulous-translator/pom.xml
+#COPY ems-swarmchestrate/pom.xml   ${BUILD_DIR}/ems-nebulous-translator/pom.xml
 #RUN --mount=type=cache,target=/root/.m2,id=maven-cache mvn -B dependency:go-offline
-RUN mvn -q -B -ntp dependency:go-offline
+#RUN mvn -q -B -ntp dependency:go-offline
 
 # Copy source and .git
 COPY ./.git                    ${BUILD_DIR}/.git
