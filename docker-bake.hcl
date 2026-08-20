@@ -114,6 +114,8 @@ target "server" {
 
 target "client" {
   inherits = ["common"]
+  context    = "ems-client-swarmchestrate"
+  dockerfile = "Dockerfile"
   target     = "ems-client-with-adaptive-filtering"
 
   tags = [
