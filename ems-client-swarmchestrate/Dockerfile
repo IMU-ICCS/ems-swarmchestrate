@@ -34,7 +34,7 @@ WORKDIR ${BUILD_DIR}/ems-nebulous-translator
 #RUN mvn -q -B -ntp dependency:go-offline
 
 # Copy source and .git
-COPY ./.git                     ${BUILD_DIR}/.git
+#COPY ./.git                     ${BUILD_DIR}/.git
 COPY ems-client-swarmchestrate  ${BUILD_DIR}/ems-nebulous-translator
 
 # Build plugin
