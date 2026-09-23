@@ -23,7 +23,7 @@ env:
   REGISTRY: ghcr.io/imu-iccs
   CORE_VERSION: 8.0.0-snapshot
   NEBULOUS_VERSION: 1.1.0-snapshot
-  SWARMCHESTRATE_VERSION: 1.1.0-snapshot
+  SWARMCHESTRATE_VERSION: 1.2.0-snapshot
 
 jobs:
 
