@@ -532,6 +532,9 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                 write_to_file("Capability content is "+capabilities.get(capability));
             }
             
+            List<Map<String, Object>> metrics = new ArrayList<>();
+            List<Map<String, Object>> requirements = new ArrayList<>();
+            
             { // Start capabilities processing block
 
                 // Process metrics capability
