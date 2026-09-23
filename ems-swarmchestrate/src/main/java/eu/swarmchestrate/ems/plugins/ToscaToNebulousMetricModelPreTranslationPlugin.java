@@ -546,7 +546,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                     Map<String, Object> metricsProperties = (Map<String, Object>) metricsCapability.get("properties");
                     if (metricsProperties != null) {
                         // Process raw metrics
-                        List<Map<String, Object>> rawMetrics = (List<Map<String, Object>>) metricsProperties.get("raw");
+                        rawMetrics = (List<Map<String, Object>>) metricsProperties.get("raw");
                         if (rawMetrics != null) {
                             log.debug("Processing raw metrics");
                             write_to_file("Processing raw metrics");
@@ -559,7 +559,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                         }
 
                         // Process composite metrics
-                        List<Map<String, Object>> compositeMetrics = (List<Map<String, Object>>) metricsProperties.get("composite");
+                        compositeMetrics = (List<Map<String, Object>>) metricsProperties.get("composite");
                         if (compositeMetrics != null) {
                             log.debug("Processing composite metrics");
                             write_to_file("Processing composite metrics");
