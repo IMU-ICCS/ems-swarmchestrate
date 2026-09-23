@@ -643,7 +643,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
      * 1. Metric as direct object with "name" field: {name: "metric1", sensor: "...", ...}
      * 2. Metric keyed by name: {metric_name: {collector: "...", config: {...}}}
      */
-    private Map<String, Object> processRawMetricTOSCA2(Map<String, Object> rawMetric) {
+    private Map<String, Object> processRawMetricTOSCA2((Map<String, Object> rawMetric,String nodeName) {
         log.debug("Processing raw metric: {}", rawMetric);
         Map<String, Object> metric = new LinkedHashMap<>();
 
@@ -714,7 +714,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
      * 1. Metric as direct object with "name" field: {name: "metric1", formula: "...", ...}
      * 2. Metric keyed by name: {metric_name: {formula: {...}, window: {...}}}
      */
-    private Map<String, Object> processCompositeMetricTOSCA2(Map<String, Object> compositeMetric) {
+    private Map<String, Object> processCompositeMetricTOSCA2(Map<String, Object> compositeMetric, String nodeName, List<Map<String, Object>> compositeMetrics, List<Map<String, Object>> rawMetrics) {
         log.debug("Processing composite metric: {}", compositeMetric);
         Map<String, Object> metric = new LinkedHashMap<>();
 
@@ -833,7 +833,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
      * Process SLO constraint from TOSCA2 format
      * Note: In TOSCA2 format, slo-constraints is a single object, not a list
      */
-    private Map<String, Object> processSLOConstraintTOSCA2(Map<String, Object> sloProperties) {
+    private Map<String, Object> processSLOConstraintTOSCA2(Map<String, Object> sloProperties,String nodeName,List<Map<String,Object>> compositeMetrics, List<Map<String, Object>> rawMetrics) {
         log.debug("Processing SLO constraint: {}", sloProperties);
         Map<String, Object> requirement = new LinkedHashMap<>();
 
