@@ -643,7 +643,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
      * 1. Metric as direct object with "name" field: {name: "metric1", sensor: "...", ...}
      * 2. Metric keyed by name: {metric_name: {collector: "...", config: {...}}}
      */
-    private Map<String, Object> processRawMetricTOSCA2((Map<String, Object> rawMetric,String nodeName) {
+    private Map<String, Object> processRawMetricTOSCA2(Map<String, Object> rawMetric,String nodeName) {
         log.debug("Processing raw metric: {}", rawMetric);
         Map<String, Object> metric = new LinkedHashMap<>();
 
