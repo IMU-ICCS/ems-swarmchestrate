@@ -548,7 +548,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                             log.debug("Processing raw metrics");
                             write_to_file("Processing raw metrics");
                             for (Map<String, Object> rawMetric : rawMetrics) {
-                                Map<String, Object> metric = processRawMetricTOSCA2(rawMetric);
+                                Map<String, Object> metric = processRawMetricTOSCA2(rawMetric,nodeName);
                                 if (metric != null) {
                                     metrics.add(metric);
                                 }
@@ -561,7 +561,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                             log.debug("Processing composite metrics");
                             write_to_file("Processing composite metrics");
                             for (Map<String, Object> compositeMetric : compositeMetrics) {
-                                Map<String, Object> metric = processCompositeMetricTOSCA2(compositeMetric);
+                                Map<String, Object> metric = processCompositeMetricTOSCA2(compositeMetric,nodeName,compositeMetrics,rawMetrics);
                                 if (metric != null) {
                                     metrics.add(metric);
                                 }
@@ -583,8 +583,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                         List<Map<String, Object>> orList = (List<Map<String, Object>>) sloProperties.get("or_list");
                         if (orList != null) {
                             for (Map<String, Object> sloItem : orList) {
-                                Map<String, Object> requirement = processSLOConstraintTOSCA2(sloItem);
-
+                                Map<String, Object> requirement = processSLOConstraintTOSCA2(sloItem,nodeName,compositeMetrics,rawMetrics);
                                 if (requirement != null) {
                                     requirements.add(requirement);
                                     write_to_file("Considering requirement "+requirement.toString());
@@ -594,8 +593,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                             }
                         } else {
                             // Fallback for single constraint
-                            Map<String, Object> requirement = processSLOConstraintTOSCA2(sloProperties);
-
+                            Map<String, Object> requirement = processSLOConstraintTOSCA2(sloProperties,nodeName,compositeMetrics,rawMetrics);
                             if (requirement != null) {
                                 requirements.add(requirement);
                                 write_to_file("Considering requirement "+requirement.toString());
@@ -649,7 +647,15 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         log.debug("Processing raw metric: {}", rawMetric);
         Map<String, Object> metric = new LinkedHashMap<>();
 
-        String name = (String) rawMetric.get("name");
+ //String name = node_name+"."+((String) rawMetric.get("name"));
+
+        String metric_name_initial = (String) rawMetric.get("name");
+        String name;
+        if (!metric_name_initial.contains(".")){
+            name = nodeName+"."+metric_name_initial;
+        }else{
+            name = metric_name_initial;
+        }
         Map<String, Object> metricData = rawMetric;
 
         // Handle format where metric name is the key (legacy format)
@@ -712,7 +718,15 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         log.debug("Processing composite metric: {}", compositeMetric);
         Map<String, Object> metric = new LinkedHashMap<>();
 
-        String name = (String) compositeMetric.get("name");
+        //String name = (String) compositeMetric.get("name");
+        String initial_composite_metric_name = (String) compositeMetric.get("name");
+        String name;
+        if (!initial_composite_metric_name.contains(".")){
+            name = nodeName+"."+initial_composite_metric_name;
+        }else{
+            name = initial_composite_metric_name;
+        }
+        
         Map<String, Object> metricData = compositeMetric;
 
         // Handle format where metric name is the key (legacy format)
@@ -740,13 +754,13 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                 // Formula is an object with type and argument
                 Map<String, Object> formulaMap = (Map<String, Object>) formulaObj;
                 String formulaType = (String) formulaMap.get("type");
-                String formulaArg = (String) formulaMap.get("argument");
+                String formulaArg = replaceExpressionArguments((String) formulaMap.get("argument"),nodeName,compositeMetrics,rawMetrics);
                 if (formulaType != null && formulaArg != null) {
                     metric.put("formula", formulaType + "( " + formulaArg + " )");
                 }
             } else {
                 // Formula is a direct string
-                metric.put("formula", formulaObj.toString());
+                metric.put("formula", replaceExpressionArguments(formulaObj.toString(),nodeName,compositeMetrics,rawMetrics));
             }
         }
 
@@ -787,6 +801,34 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         return metric;
     }
 
+
+    /**
+    * Process the arguments in an expression (SLO or composite metric) in order to have unique naming relevant to the services they belong to
+    */
+
+    
+    private static String replaceExpressionArguments(String expressionString, String nodeName, List<Map<String,Object>> compositeMetrics, List<Map<String, Object>> rawMetrics) {
+        //The code below can be optimized and called only once by the caller function in preparation for the usage of longest_metric_names (and have only this variable as a function parameter)
+        ArrayList<String> longest_metric_names = new ArrayList<>();
+        for (Map<String, Object> raw_metric : rawMetrics){
+            longest_metric_names.add((String) raw_metric.get("name"));
+        }
+        for (Map<String, Object> comp_metric : compositeMetrics){
+            longest_metric_names.add((String) comp_metric.get("name"));
+        }
+        longest_metric_names.sort((a,b) -> -Integer.compare(a.length(),b.length()));
+        //Starting replacing metrics in formula, from strings that have greater length in order to avoid replacing improperly
+        String updated_expression_string = expressionString;
+        for (int i=0; i<longest_metric_names.size(); i++){
+            String metric_name = longest_metric_names.get(i);
+            if (!metric_name.contains(".")) {//If there is no service name preceding
+                String updated_metric_name = nodeName+"."+metric_name;
+                updated_expression_string = updated_expression_string.replaceAll(("\\b" + metric_name + "\\b"),updated_metric_name);
+            }
+        }
+        return updated_expression_string;
+    }
+    
     /**
      * Process SLO constraint from TOSCA2 format
      * Note: In TOSCA2 format, slo-constraints is a single object, not a list
@@ -805,7 +847,14 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         requirement.put("type", "slo");
 
         // Build constraint from metric, operator, and threshold
-        String metric = (String) sloProperties.get("metric");
+        String metric_name_initial = (String) sloProperties.get("metric");
+        String metric;
+        if (!metric_name_initial.contains(".")){
+            metric = nodeName+"."+metric_name_initial;
+        }else{
+            metric = metric_name_initial;
+        }
+        
         String operator = (String) sloProperties.get("operator");
         Object threshold = sloProperties.get("threshold");
 
