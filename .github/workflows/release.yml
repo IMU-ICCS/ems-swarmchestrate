@@ -1,0 +1,15 @@
+name: Build everything when a version, release or test tag is found
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "r*"
+      - "test"
+
+jobs:
+  build-app1:
+    uses: ./.github/workflows/build.yml
+
+  build-app2:
+    uses: ./.github/workflows/build-client.yml

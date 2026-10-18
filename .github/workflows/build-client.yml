@@ -1,0 +1,165 @@
+name: EMS client for Swarmchestrate
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - ".github/workflows/build.yml"
+      - ".github/workflows/release.yml"
+      - "ems-swarmchestrate/**"
+      - "docker-bake.hcl"
+      - "Dockerfile*"
+  repository_dispatch:
+    types: [core-published]
+  workflow_dispatch: {}
+  workflow_call:
+
+concurrency:
+  group: ems-client-swarmchestrate-workflow
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/imu-iccs
+  CORE_VERSION: 8.0.0-snapshot
+  SWARMCHESTRATE_VERSION: 1.0.0-snapshot
+
+jobs:
+
+  # ---------------------------------------------------
+  # 1. Resolve exact core image digests to build against
+  # ---------------------------------------------------
+  preflight:
+    runs-on: ubuntu-24.04
+    outputs:
+      client_ref: ${{ steps.resolve.outputs.client_ref }}
+      builder_ref: ${{ steps.resolve.outputs.builder_ref }}
+
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve core image digests
+        id: resolve
+        run: |
+          set -euo pipefail
+
+          CLIENT_IMAGE="${REGISTRY}/ems-client:${CORE_VERSION}"
+          BUILDER_IMAGE="${REGISTRY}/ems-server-core-builder:${CORE_VERSION}"
+
+          echo "Checking $CLIENT_IMAGE ..."
+          CLIENT_DIGEST=$(docker buildx imagetools inspect "$CLIENT_IMAGE" --format '{{json .Manifest}}' | jq -r '.digest')
+          echo "Checking $BUILDER_IMAGE ..."
+          BUILDER_DIGEST=$(docker buildx imagetools inspect "$BUILDER_IMAGE" --format '{{json .Manifest}}' | jq -r '.digest')
+
+          if [ -z "$CLIENT_DIGEST" ] || [ "$CLIENT_DIGEST" = "null" ]; then
+            echo "ERROR: could not resolve digest for $CLIENT_IMAGE"
+            exit 1
+          fi
+          if [ -z "$BUILDER_DIGEST" ] || [ "$BUILDER_DIGEST" = "null" ]; then
+            echo "ERROR: could not resolve digest for $BUILDER_IMAGE"
+            exit 1
+          fi
+
+          echo "client_ref=${REGISTRY}/ems-client@${CLIENT_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "builder_ref=${REGISTRY}/ems-server-core-builder@${BUILDER_DIGEST}" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------
+  # 2. Collect metadata
+  # ---------------------------------------------------
+  metadata:
+    runs-on: ubuntu-24.04
+    outputs:
+      safe_time: ${{ steps.meta.outputs.safe_time }}
+      commit_sha: ${{ steps.meta.outputs.commit_sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: meta
+        run: |
+          COMMIT_DATE=$(git show -s --format=%cI HEAD)
+          SAFE_TIME=$(date -u -d "$COMMIT_DATE" +"%Y%m%dT%H%M%SZ")
+          echo "safe_time=$SAFE_TIME" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------
+  # 3. Build plugin image per platform (parallel matrix)
+  # ---------------------------------------------------
+  build:
+    needs: [preflight, metadata]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch_tag: amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            arch_tag: arm64
+            runner: ubuntu-24.04-arm     # native arm64 - no QEMU
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (${{ matrix.platform }})
+        run: |
+          export REGISTRY="${{ env.REGISTRY }}"
+          export COMMIT_SHA="${{ needs.metadata.outputs.commit_sha }}"
+          export COMMIT_SAFE_TIME="${{ needs.metadata.outputs.safe_time }}"
+          export PLATFORM="${{ matrix.platform }}"
+          export ARCH_TAG="${{ matrix.arch_tag }}"
+          export CORE_CLIENT_REF="${{ needs.preflight.outputs.client_ref }}"
+          export CORE_BUILDER_REF="${{ needs.preflight.outputs.builder_ref }}"
+
+          docker buildx bake \
+              -f ems-client-swarmchestrate/docker-bake.hcl \
+              --set '*.context=ems-client-swarmchestrate' \
+          --push
+
+  # ---------------------------------------------------
+  # 4. Merge per-arch images into multi-platform manifests
+  # ---------------------------------------------------
+  merge:
+    needs: [metadata, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create multi-arch manifests
+        run: |
+          set -eux
+          
+          REGISTRY="${{ env.REGISTRY }}"
+          COMMIT_SHA="${{ needs.metadata.outputs.commit_sha }}"
+          COMMIT_SAFE_TIME="${{ needs.metadata.outputs.safe_time }}"
+
+          # Build and push EMS client with metrics filter image
+          SRC_AMD64="${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-amd64"
+          SRC_ARM64="${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-arm64"
+          
+          docker buildx imagetools create \
+            -t "${REGISTRY}/ems-client-swarmchestrate:${SWARMCHESTRATE_VERSION}" \
+            -t "${REGISTRY}/ems-client-swarmchestrate:latest" \
+            -t "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}" \
+            -t "${REGISTRY}/ems-client-swarmchestrate:${COMMIT_SHA}-${COMMIT_SAFE_TIME}" \
+            "${SRC_AMD64}" "${SRC_ARM64}"

@@ -8,8 +8,8 @@
 #
 
 
-# ----------------- EMS Builder image -----------------
-FROM ems_core_builder_image AS ems-swarmchestrate-translator-builder
+# ----------------- EMS client Builder image -----------------
+FROM ems_core_builder_image AS ems-client-swarmchestrate-builder
 
 ARG BUILD_DIR=/build
 
@@ -22,54 +22,33 @@ ARG BUILD_DESCR=''
 
 ENV GIT_COMMIT=$GIT_COMMIT \
     GIT_BRANCH=$GIT_BRANCH \
-    GIT_URL=$GIT_URL \
-    DOCKER_IMAGE=$DOCKER_IMAGE \
-    BUILD_DESCR="$BUILD_DESCR"
+    GIT_URL=$GIT_URL
 
-WORKDIR ${BUILD_DIR}/ems-nebulous-translator
+WORKDIR ${BUILD_DIR}/ems-client-swarmchestrate
 
 # Download dependencies
-#COPY ems-swarmchestrate/pom.xml   ${BUILD_DIR}/ems-nebulous-translator/pom.xml
-#RUN --mount=type=cache,target=/root/.m2,id=maven-cache mvn -B dependency:go-offline
-#RUN mvn -q -B -ntp dependency:go-offline
+COPY ./pom.xml      ${BUILD_DIR}/ems-client-swarmchestrate/pom.xml
+RUN mvn -q -B -ntp dependency:go-offline
 
-# Copy source and .git
-#COPY ./.git                     ${BUILD_DIR}/.git
-COPY ems-client-swarmchestrate  ${BUILD_DIR}/ems-nebulous-translator
+# Copy source
+COPY .  ${BUILD_DIR}/ems-client-swarmchestrate/
 
 # Build plugin
-#RUN --mount=type=cache,target=/root/.m2,id=maven-cache \
 RUN \
     mvn -B -ntp -DskipTests \
-    -Ddocker.image-nebulous=${DOCKER_IMAGE} \
-    -Dbuild.description="${BUILD_DESCR}" \
-    clean install -P '!build-docker-image'
+    clean install \
+    dependency:copy-dependencies
 
 
-# -----------------   EMS Server with Nebulous+Swarmchestrate Translator image   -----------------
-FROM ems_core_image AS ems-server-with-swarmchestrate-translator
-
-ARG BUILD_DIR=/build
-
-ENV EXTRA_LOADER_PATHS=/plugins/* \
-    SCAN_PACKAGES=eu.nebulous.ems,eu.swarmchestrate.ems \
-    IP_SETTING=DEFAULT_IP \
-    SELF_HEALING_ENABLED=false
-
-COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/ems-nebulous-*-jar-with-dependencies.jar /plugins/
-COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/banner.txt /tmp/
-
-RUN cat /tmp/banner.txt >> ${BASEDIR}/BOOT-INF/classes/banner.txt
-
-
-# -----------------   EMS Server with Nebulous+Swarmchestrate Translator image   -----------------
-FROM ems_client_image AS ems-client-with-adaptive-filtering
+# -----------------   EMS client with metrics filter image   -----------------
+FROM ems_core_image AS ems-client-swarmchestrate
 
 ARG BUILD_DIR=/build
 
 ENV SCAN_PACKAGES=eu.swarmchestrate.ems \
-    IP_SETTING=DEFAULT_IP \
-    SELF_HEALING_ENABLED=false \
-    COLLECTOR_CLASSES=eu.swarmchestrate.ems.client.collector.netdata.K8sNetdataCollector,gr.iccs.imu.ems.baguette.client.collector.prometheus.PrometheusCollector2,gr.iccs.imu.ems.baguette.client.collector.generator.ClientGeneratorCollector
+    IP_SETTING=DEFAULT_IP         \
+    LOGGING_LEVEL_EU_SWARMCHESTRATE_EMS_CLIENT_FILTER=INFO
 
-COPY --from=ems-swarmchestrate-translator-builder ${BUILD_DIR}/ems-nebulous-translator/target/ems-nebulous-*-jar-with-dependencies.jar ./jars/
+RUN --mount=type=bind,from=ems-client-swarmchestrate-builder,source=${BUILD_DIR}/ems-client-swarmchestrate/target,target=/tmp/target \
+    cp -f  /tmp/target/ems-client-swarmchestrate-*.jar  /opt/baguette-client/jars/ && \
+    cp -rn /tmp/target/dependency/*                     /opt/baguette-client/jars/

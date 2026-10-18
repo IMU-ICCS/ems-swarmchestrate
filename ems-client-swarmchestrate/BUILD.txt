@@ -1,0 +1,4 @@
+
+cd ems-swarmchestrate/ems-client-swarmchestrate
+docker buildx bake -f docker-bake.hcl --set '*.context=.' --var 'CORE_CLIENT_REF=ems-client:8.0.0-SNAPSHOT' --var 'CORE_BUILDER_REF=ems-server-core-builder:8.0.0-SNAPSHOT' --var 'REGISTRY=docker.io' --var 'COMMIT_SHA=1.0.0' --var 'PLATFORM=linux/amd64' --var 'ARCH_TAG=SNAPSHOT'
+# --set 'client.tags=localhost:5001/emsclient:latest' --push

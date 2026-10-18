@@ -3,10 +3,10 @@ name: EMS Swarmchestrate Translator Plugin Build
 on:
   push:
     branches: [ main ]
-    tags:
-      - "v*"
-      - "r*"
-      - "test"
+    paths-ignore:
+      - ".github/workflows/build-client.yml"
+      - ".github/workflows/release.yml"
+      - "ems-client-swarmchestrate/**"
   repository_dispatch:
     types: [core-published]
   workflow_dispatch: {}
