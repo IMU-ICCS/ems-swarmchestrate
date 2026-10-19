@@ -26,18 +26,18 @@ public class TestMetricsFilter implements IMetricsFilter, InitializingBean {
     }
 
     @Override
-    public Context prePublishMetric(String metricName, double metricValue, String nodeAddress) {
-        log.info(">>>>>>>>>>>>>>>>> [SWC] prePublishMetric: name={}, value={}, nodeAddress={}", metricName, metricValue, nodeAddress);
+    public Context prePublishMetric(String metricName, double metricValue, long timestamp, String nodeAddress) {
+        log.info(">>>>>>>>>>>>>>>>> [SWC] prePublishMetric: name={}, value={}, ts={}, nodeAddress={}", metricName, metricValue, timestamp, nodeAddress);
         return new IMetricsFilter.Context(LocalTime.now().getSecond()<30, this);
     }
 
     @Override
-    public void postPublishMetric(String metricName, double metricValue, String nodeAddress, Context context) {
-        log.info(">>>>>>>>>>>>>>>>> [SWC] postPublishMetric: name={}, value={}, nodeAddress={}, context={}", metricName, metricValue, nodeAddress, context);
+    public void postPublishMetric(String metricName, double metricValue, long timestamp, String nodeAddress, Context context) {
+        log.info(">>>>>>>>>>>>>>>>> [SWC] postPublishMetric: name={}, value={}, ts={}, nodeAddress={}, context={}", metricName, metricValue, timestamp, nodeAddress, context);
     }
 
     @Override
-    public void notPublishedMetric(String metricName, double metricValue, String nodeAddress, Context context) {
-        log.info(">>>>>>>>>>>>>>>>> [SWC] notPublishedMetric: name={}, value={}, nodeAddress={}, context={}", metricName, metricValue, nodeAddress, context);
+    public void notPublishedMetric(String metricName, double metricValue, long timestamp, String nodeAddress, Context context) {
+        log.info(">>>>>>>>>>>>>>>>> [SWC] notPublishedMetric: name={}, value={}, ts={}, nodeAddress={}, context={}", metricName, metricValue, timestamp, nodeAddress, context);
     }
 }
