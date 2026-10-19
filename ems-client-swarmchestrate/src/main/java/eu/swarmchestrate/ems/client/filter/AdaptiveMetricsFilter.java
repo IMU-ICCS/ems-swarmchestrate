@@ -28,7 +28,7 @@ public class AdaptiveMetricsFilter implements IMetricsFilter, InitializingBean {
     private final Map<String, Deque<MetricSample>> metricHistory = new ConcurrentHashMap<>();
     // track last time a metric was published (milliseconds since epoch)
     private final Map<String, Long> lastPublishedAt = new ConcurrentHashMap<>();
-    private final double PERCENTAGE_THRESHOLD = 10.0;
+    private final double PERCENTAGE_THRESHOLD;
 
     private static class MetricSample {
         final double value;
@@ -43,6 +43,27 @@ public class AdaptiveMetricsFilter implements IMetricsFilter, InitializingBean {
         public String toString() {
             return "MetricSample(value=" + value + ", ts=" + timestamp + ")";
         }
+    }
+
+    public AdaptiveMetricsFilter() {
+        String s = System.getenv("SWARMCHESTRATE_ADAPTIVE_FILTER_PERCENTAGE_THRESHOLD");
+        double threshold = 10.0;
+        if (s!=null && ! s.trim().isEmpty()) {
+            try {
+                double d = Double.parseDouble(s.trim());
+                if (d<0 || d>100) {
+                    log.error("Invalid adaptive-filter.percentage-threshold value: {}: Not between 0.0 and 100.0", s);
+                } else {
+                    threshold = d;
+                }
+            } catch (Exception e) {
+                if (log.isDebugEnabled())
+                    log.debug("Invalid adaptive-filter.percentage-threshold value: {}: {}", s, e.getMessage(), e);
+                else
+                    log.error("Invalid adaptive-filter.percentage-threshold value: {}: {}", s, e.getMessage());
+            }
+        }
+        PERCENTAGE_THRESHOLD = threshold;
     }
 
     @Override
