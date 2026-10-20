@@ -826,8 +826,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
             String metric_name = longest_metric_names.get(i);
             if (!metric_name.contains(".")) {//If there is no service name preceding
                 String updated_metric_name = nodeName+"."+metric_name;
-                updated_expression_string = updated_expression_string.replaceAll(("\\b" + metric_name + "\\b"),updated_metric_name);
-            }
+                updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + metric_name + "\\s*\\)","("+updated_metric_name+")");            }
         }
         return updated_expression_string;
     }
