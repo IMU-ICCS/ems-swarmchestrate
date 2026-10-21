@@ -47,7 +47,7 @@ import java.util.Map;
 public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTranslationPlugin {
 
     private final NebulousEmsTranslatorProperties properties;
-    private final String separator = "__swch__";
+    private final static String separator = "__swch__";
 
     protected void write_to_file(String content){
 
