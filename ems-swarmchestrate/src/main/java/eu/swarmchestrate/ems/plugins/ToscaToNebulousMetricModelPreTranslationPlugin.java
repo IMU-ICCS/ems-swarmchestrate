@@ -48,6 +48,8 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
 
     private final NebulousEmsTranslatorProperties properties;
     private final static String separator = "__swch__";
+    private final static String dot_separator = ".";
+
 
     protected void write_to_file(String content){
 
@@ -504,6 +506,57 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
             return null;
         }
 
+        log.info("Processing global metric_list to be used for final metric naming with separator");
+        write_to_file("Processing global metric_list to be used for final metric naming with separator");
+        HashSet<String> metric_list = new HashSet<>();
+
+        for (Map.Entry<String, Object> entry : nodeTemplates.entrySet()) {
+            String nodeName = entry.getKey();
+
+            Map<String, Object> capabilities = (Map<String, Object>) ((Map<String, Object>) entry.getValue()).get("capabilities");
+            if (capabilities == null) {
+                continue; // Skip this node
+            }
+
+            componentNames.add(nodeName);
+
+            List<Map<String, Object>> metrics = new ArrayList<>();
+
+            { // Start capabilities processing block
+
+                List<Map<String, Object>> compositeMetrics = List.of();
+                List<Map<String, Object>> rawMetrics = List.of();
+                // Process metrics capability
+                Map<String, Object> metricsCapability = (Map<String, Object>) capabilities.get("metrics");
+                if (metricsCapability != null) {
+                    Map<String, Object> metricsProperties = (Map<String, Object>) metricsCapability.get("properties");
+                    if (metricsProperties != null) {
+                        rawMetrics = (List<Map<String, Object>>) metricsProperties.get("raw");
+                        if (rawMetrics != null) {
+                            for (Map<String, Object> rawMetric : rawMetrics) {
+                                String metric_name_initial = (String) rawMetric.get("name");
+                                if (metric_name_initial != null) {
+                                    metric_list.add(metric_name_initial);
+                                }
+                            }
+                        }
+
+                        // Process composite metrics
+                        compositeMetrics = (List<Map<String, Object>>) metricsProperties.get("composite");
+                        if (compositeMetrics != null) {
+                            for (Map<String, Object> compositeMetric : compositeMetrics) {
+                                String metric_name_initial = (String) compositeMetric.get("name");
+                                if (metric_name_initial != null) {
+                                    metric_list.add(metric_name_initial);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        
         log.info("Processing node_templates");
         write_to_file("Processing node_templates");
         for (Map.Entry<String, Object> entry : nodeTemplates.entrySet()) {
@@ -523,7 +576,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
             Map<String, Object> componentCaml = new LinkedHashMap<>();
             componentCaml.put("name", nodeName);
             // Track component names for scopes
-            componentNames.add(nodeName);
+            // componentNames.add(nodeName);
 
             List<Map<String, Object>> metrics = new ArrayList<>();
             List<Map<String, Object>> requirements = new ArrayList<>();
@@ -565,7 +618,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                             log.debug("Processing composite metrics");
                             write_to_file("Processing composite metrics");
                             for (Map<String, Object> compositeMetric : compositeMetrics) {
-                                Map<String, Object> metric = processCompositeMetricTOSCA2(compositeMetric,nodeName,compositeMetrics,rawMetrics);
+                                Map<String, Object> metric = processCompositeMetricTOSCA2(compositeMetric,nodeName,componentNames,metric_list);
                                 if (metric != null) {
                                     metrics.add(metric);
                                 }
@@ -587,7 +640,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                         List<Map<String, Object>> orList = (List<Map<String, Object>>) sloProperties.get("or_list");
                         if (orList != null) {
                             for (Map<String, Object> sloItem : orList) {
-                                Map<String, Object> requirement = processSLOConstraintTOSCA2(sloItem,nodeName,compositeMetrics,rawMetrics);
+                                Map<String, Object> requirement = processSLOConstraintTOSCA2(sloItem,componentNames,metric_list,nodeName);
                                 if (requirement != null) {
                                     requirements.add(requirement);
                                     write_to_file("Considering requirement "+requirement.toString());
@@ -597,7 +650,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                             }
                         } else {
                             // Fallback for single constraint
-                            Map<String, Object> requirement = processSLOConstraintTOSCA2(sloProperties,nodeName,compositeMetrics,rawMetrics);
+                                Map<String, Object> requirement = processSLOConstraintTOSCA2(sloItem,componentNames,metric_list,nodeName);
                             if (requirement != null) {
                                 requirements.add(requirement);
                                 write_to_file("Considering requirement "+requirement.toString());
@@ -655,10 +708,10 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
 
         String metric_name_initial = (String) rawMetric.get("name");
         String name;
-        if (!metric_name_initial.contains(separator)){
+        if (!metric_name_initial.contains(dot_separator)){
             name = nodeName+separator+metric_name_initial;
         }else{
-            name = metric_name_initial;
+            name = metric_name_initial.replaceAll(dot_separator,separator);
         }
         Map<String, Object> metricData = rawMetric;
 
@@ -718,17 +771,17 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
      * 1. Metric as direct object with "name" field: {name: "metric1", formula: "...", ...}
      * 2. Metric keyed by name: {metric_name: {formula: {...}, window: {...}}}
      */
-    private Map<String, Object> processCompositeMetricTOSCA2(Map<String, Object> compositeMetric, String nodeName, List<Map<String, Object>> compositeMetrics, List<Map<String, Object>> rawMetrics) {
+    private static Map<String, Object> processCompositeMetricTOSCA2(Map<String, Object> compositeMetric, String nodeName, List<String> componentNames, HashSet<String> metric_list) {
         log.debug("Processing composite metric: {}", compositeMetric);
         Map<String, Object> metric = new LinkedHashMap<>();
 
         //String name = (String) compositeMetric.get("name");
         String initial_composite_metric_name = (String) compositeMetric.get("name");
         String name;
-        if (!initial_composite_metric_name.contains(separator)){
+        if (!initial_composite_metric_name.contains(dot_separator)){
             name = nodeName+separator+initial_composite_metric_name;
         }else{
-            name = initial_composite_metric_name;
+            name = initial_composite_metric_name.replaceAll(dot_separator,separator);
         }
         
         Map<String, Object> metricData = compositeMetric;
@@ -758,13 +811,13 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                 // Formula is an object with type and argument
                 Map<String, Object> formulaMap = (Map<String, Object>) formulaObj;
                 String formulaType = (String) formulaMap.get("type");
-                String formulaArg = replaceExpressionArguments((String) formulaMap.get("argument"),nodeName,compositeMetrics,rawMetrics);
+                String formulaArg = replaceExpressionArguments((String) formulaMap.get("argument"),componentNames,metric_list,nodeName);
                 if (formulaType != null && formulaArg != null) {
                     metric.put("formula", formulaType + "( " + formulaArg + " )");
                 }
             } else {
                 // Formula is a direct string
-                metric.put("formula", replaceExpressionArguments(formulaObj.toString(),nodeName,compositeMetrics,rawMetrics));
+                metric.put("formula", replaceExpressionArguments(formulaObj.toString(),componentNames,metric_list,nodeName));
             }
         }
 
@@ -811,23 +864,28 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
     */
 
     
-    private static String replaceExpressionArguments(String expressionString, String nodeName, List<Map<String,Object>> compositeMetrics, List<Map<String, Object>> rawMetrics) {
+    private static String replaceExpressionArguments(String expressionString, List <String> nodeNames, HashSet<String> metric_list, String componentName) {
         //The code below can be optimized and called only once by the caller function in preparation for the usage of longest_metric_names (and have only this variable as a function parameter)
-        ArrayList<String> longest_metric_names = new ArrayList<>();
-        for (Map<String, Object> raw_metric : rawMetrics){
-            longest_metric_names.add((String) raw_metric.get("name"));
-        }
-        for (Map<String, Object> comp_metric : compositeMetrics){
-            longest_metric_names.add((String) comp_metric.get("name"));
-        }
+        ArrayList<String> longest_metric_names = new ArrayList<>(metric_list);
+
         longest_metric_names.sort((a,b) -> -Integer.compare(a.length(),b.length()));
         //Starting replacing metrics in formula, from strings that have greater length in order to avoid replacing improperly
         String updated_expression_string = expressionString;
         for (int i=0; i<longest_metric_names.size(); i++){
             String metric_name = longest_metric_names.get(i);
-            if (!metric_name.contains(separator)) {//If there is no service name preceding
-                String updated_metric_name = nodeName+separator+metric_name;
-                updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + metric_name + "\\s*\\)","("+updated_metric_name+")");            }
+            if (!metric_name.contains(dot_separator)) {//If there is no service name preceding
+
+                String possible_long_metric_name = componentName+dot_separator+metric_name;
+                String updated_metric_name = componentName + separator + metric_name;
+                updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + possible_long_metric_name + "\\s*\\)", "(" + updated_metric_name + ")");
+                updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + metric_name + "\\s*\\)", "(" + updated_metric_name + ")");
+
+                for (String nodeName: nodeNames) {
+                    possible_long_metric_name = nodeName+dot_separator+metric_name;
+                    updated_metric_name = nodeName + separator + metric_name;
+                    updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + possible_long_metric_name + "\\s*\\)", "(" + updated_metric_name + ")");
+                }
+            }
         }
         return updated_expression_string;
     }
@@ -836,7 +894,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
      * Process SLO constraint from TOSCA2 format
      * Note: In TOSCA2 format, slo-constraints is a single object, not a list
      */
-    private Map<String, Object> processSLOConstraintTOSCA2(Map<String, Object> sloProperties,String nodeName,List<Map<String,Object>> compositeMetrics, List<Map<String, Object>> rawMetrics) {
+    private static Map<String, Object> processSLOConstraintTOSCA2(Map<String, Object> sloProperties,List<String> componentNames,HashSet<String>metric_list, String nodeName) {
         log.debug("Processing SLO constraint: {}", sloProperties);
         Map<String, Object> requirement = new LinkedHashMap<>();
 
@@ -852,10 +910,10 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         // Build constraint from metric, operator, and threshold
         String metric_name_initial = (String) sloProperties.get("metric");
         String metric;
-        if (!metric_name_initial.contains(separator)){
+        if (!metric_name_initial.contains(dot_separator)){
             metric = nodeName+separator+metric_name_initial;
         }else{
-            metric = metric_name_initial;
+            metric = metric_name_initial.replaceAll(dot_separator,separator);
         }
         
         String operator = (String) sloProperties.get("operator");
@@ -869,7 +927,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
             // Try to use a direct constraint field if it exists
             Object directConstraint = sloProperties.get("constraint");
             if (directConstraint != null) {
-                requirement.put("constraint", directConstraint.toString());
+                requirement.put("constraint", replaceExpressionArguments(directConstraint.toString(),componentNames,metric_list,nodeName));
             }
         }
 
