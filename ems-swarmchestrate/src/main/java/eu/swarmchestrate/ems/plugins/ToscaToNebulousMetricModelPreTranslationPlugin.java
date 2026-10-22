@@ -650,7 +650,7 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
                             }
                         } else {
                             // Fallback for single constraint
-                                Map<String, Object> requirement = processSLOConstraintTOSCA2(sloItem,componentNames,metric_list,nodeName);
+                            Map<String, Object> requirement = processSLOConstraintTOSCA2(sloProperties,componentNames,metric_list,nodeName);
                             if (requirement != null) {
                                 requirements.add(requirement);
                                 write_to_file("Considering requirement "+requirement.toString());
