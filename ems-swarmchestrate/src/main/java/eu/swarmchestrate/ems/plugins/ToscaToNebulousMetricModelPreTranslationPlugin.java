@@ -47,7 +47,8 @@ import java.util.Map;
 public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTranslationPlugin {
 
     private final NebulousEmsTranslatorProperties properties;
-    private final static String separator = "__swch__";
+    public static String separator = System.getenv("SEPARATOR");//"__swch__";
+    private final static boolean make_unique_metric_names = System.getenv("MAKE_UNIQUE").equalsIgnoreCase("true");
     private final static String dot_separator = ".";
 
 
@@ -707,11 +708,13 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
  //String name = node_name+separator+((String) rawMetric.get("name"));
 
         String metric_name_initial = (String) rawMetric.get("name");
-        String name;
-        if (!metric_name_initial.contains(dot_separator)){
-            name = nodeName+separator+metric_name_initial;
-        }else{
-            name = metric_name_initial.replaceAll(dot_separator,separator);
+        String name = metric_name_initial;
+        if (make_unique_metric_names){        
+            if (!metric_name_initial.contains(dot_separator)){
+                name = nodeName+separator+metric_name_initial;
+            }else{
+                name = metric_name_initial.replaceAll(dot_separator,separator);
+            }
         }
         Map<String, Object> metricData = rawMetric;
 
@@ -777,13 +780,14 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
 
         //String name = (String) compositeMetric.get("name");
         String initial_composite_metric_name = (String) compositeMetric.get("name");
-        String name;
-        if (!initial_composite_metric_name.contains(dot_separator)){
-            name = nodeName+separator+initial_composite_metric_name;
-        }else{
-            name = initial_composite_metric_name.replaceAll(dot_separator,separator);
+        String name = initial_composite_metric_name;
+        if (make_unique_metric_names){        
+            if (!initial_composite_metric_name.contains(dot_separator)){
+                name = nodeName+separator+initial_composite_metric_name;
+            }else{
+                name = initial_composite_metric_name.replaceAll(dot_separator,separator);
+            }
         }
-        
         Map<String, Object> metricData = compositeMetric;
 
         // Handle format where metric name is the key (legacy format)
@@ -873,17 +877,19 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
         String updated_expression_string = expressionString;
         for (int i=0; i<longest_metric_names.size(); i++){
             String metric_name = longest_metric_names.get(i);
-            if (!metric_name.contains(dot_separator)) {//If there is no service name preceding
-
-                String possible_long_metric_name = componentName+dot_separator+metric_name;
-                String updated_metric_name = componentName + separator + metric_name;
-                updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + possible_long_metric_name + "\\s*\\)", "(" + updated_metric_name + ")");
-                updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + metric_name + "\\s*\\)", "(" + updated_metric_name + ")");
-
-                for (String nodeName: nodeNames) {
-                    possible_long_metric_name = nodeName+dot_separator+metric_name;
-                    updated_metric_name = nodeName + separator + metric_name;
+            if (make_unique_metric_names){
+                if (!metric_name.contains(dot_separator)) {//If there is no service name preceding
+    
+                    String possible_long_metric_name = componentName+dot_separator+metric_name;
+                    String updated_metric_name = componentName + separator + metric_name;
                     updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + possible_long_metric_name + "\\s*\\)", "(" + updated_metric_name + ")");
+                    updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + metric_name + "\\s*\\)", "(" + updated_metric_name + ")");
+    
+                    for (String nodeName: nodeNames) {
+                        possible_long_metric_name = nodeName+dot_separator+metric_name;
+                        updated_metric_name = nodeName + separator + metric_name;
+                        updated_expression_string = updated_expression_string.replaceAll("\\(\\s*" + possible_long_metric_name + "\\s*\\)", "(" + updated_metric_name + ")");
+                    }
                 }
             }
         }
@@ -909,11 +915,14 @@ public class ToscaToNebulousMetricModelPreTranslationPlugin implements PreTransl
 
         // Build constraint from metric, operator, and threshold
         String metric_name_initial = (String) sloProperties.get("metric");
-        String metric;
-        if (!metric_name_initial.contains(dot_separator)){
-            metric = nodeName+separator+metric_name_initial;
-        }else{
-            metric = metric_name_initial.replaceAll(dot_separator,separator);
+        String metric = metric_name_initial;
+        
+        if (make_unique_metric_names) {    
+            if (!metric_name_initial.contains(dot_separator)){
+                metric = nodeName+separator+metric_name_initial;
+            }else{
+                metric = metric_name_initial.replaceAll(dot_separator,separator);
+            }
         }
         
         String operator = (String) sloProperties.get("operator");
