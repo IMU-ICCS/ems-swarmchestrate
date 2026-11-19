@@ -29,6 +29,7 @@ public class AdaptiveMetricsFilter implements IMetricsFilter, InitializingBean {
     // track last time a metric was published (milliseconds since epoch)
     private final Map<String, Long> lastPublishedAt = new ConcurrentHashMap<>();
     private final double PERCENTAGE_THRESHOLD;
+    private final boolean enabled;
 
     private static class MetricSample {
         final double value;
@@ -46,7 +47,10 @@ public class AdaptiveMetricsFilter implements IMetricsFilter, InitializingBean {
     }
 
     public AdaptiveMetricsFilter() {
-        String s = System.getenv("SWARMCHESTRATE_ADAPTIVE_FILTER_PERCENTAGE_THRESHOLD");
+        String s = System.getenv("SWARMCHESTRATE_ADAPTIVE_FILTER_ENABLE");
+        this.enabled = s == null || s.isBlank() || "true".equalsIgnoreCase(s.trim());
+
+        s = System.getenv("SWARMCHESTRATE_ADAPTIVE_FILTER_PERCENTAGE_THRESHOLD");
         double threshold = 10.0;
         if (s!=null && ! s.trim().isEmpty()) {
             try {
@@ -68,11 +72,14 @@ public class AdaptiveMetricsFilter implements IMetricsFilter, InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        if (!enabled) return;
         log.info(">>>>>>>>>>>>>>>>> AdaptiveMetricsFilter initialized");
     }
 
     @Override
     public Context prePublishMetric(String metricName, double metricValue, long timestamp, String nodeAddress) {
+        if (!enabled) return new Context(true, this);;
+
         log.info(">>>>>>>>>>>>>>>>> AdaptiveMetricsFilter prePublishMetric: name={}, value={}, ts={}, nodeAddress={}", metricName, metricValue, timestamp, nodeAddress);
 
         boolean canPublish = doFilter(metricName, metricValue, timestamp, nodeAddress);
@@ -127,6 +134,7 @@ public class AdaptiveMetricsFilter implements IMetricsFilter, InitializingBean {
 
     @Override
     public void postPublishMetric(String metricName, double metricValue, long timestamp, String nodeAddress, Context context) {
+        if (!enabled) return;
         log.info(">>>>>>>>>>>>>>>>> AdaptiveMetricsFilter postPublishMetric: name={}, value={}, ts={}, nodeAddress={}, context={}", metricName, metricValue, timestamp, nodeAddress, context);
         String historyKey = metricName + "@" + nodeAddress;
         lastPublishedAt.put(historyKey, (Long)context.extra());
@@ -134,6 +142,7 @@ public class AdaptiveMetricsFilter implements IMetricsFilter, InitializingBean {
 
     @Override
     public void notPublishedMetric(String metricName, double metricValue, long timestamp, String nodeAddress, Context context) {
+        if (!enabled) return;
         log.info(">>>>>>>>>>>>>>>>> AdaptiveMetricsFilter notPublishedMetric: name={}, value={}, ts={}, nodeAddress={}, context={}", metricName, metricValue, timestamp, nodeAddress, context);
     }
 }
